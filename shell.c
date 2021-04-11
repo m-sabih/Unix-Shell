@@ -4,21 +4,20 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <pwd.h>
 
 #define MAX_LEN 512
 #define MAXARGS 10
 #define ARGLEN 30
-#define PROMPT "sabihshell:- "
 
 int execute(char* arglist[]);
 char** tokenize(char* cmdline);
-char* read_cmd(char*, FILE*);
+char* read_cmd(FILE*);
 
 int main(){
    char *cmdline;
-   char** arglist;
-   char* prompt = PROMPT;   
-   while((cmdline = read_cmd(prompt,stdin)) != NULL){
+   char** arglist;   
+   while((cmdline = read_cmd(stdin)) != NULL){
       if((arglist = tokenize(cmdline)) != NULL){
             execute(arglist);
          for(int j=0; j < MAXARGS+1; j++)
@@ -76,17 +75,21 @@ char** tokenize(char* cmdline){
    return arglist;
 }      
 
-char* read_cmd(char* prompt, FILE* fp){
-   printf("%s", prompt);
-  int c;
-   int pos = 0;
-   char* cmdline = (char*) malloc(sizeof(char)*MAX_LEN);
-   while((c = getc(fp)) != EOF){
-       if(c == '\n')
-	  break;
-       cmdline[pos++] = c;
-   }
-   if(c == EOF && pos == 0) 
+char* read_cmd(FILE* fp){
+	char prompt[1024];
+   	uid_t uid = getuid();
+    struct passwd *psw = getpwuid(uid);
+    getcwd(prompt,1024);
+  	printf("\033[1;32m%s@\033[1;34m%s\033[0m$",psw->pw_name, prompt);
+  	int c;
+   	int pos = 0;
+   	char* cmdline = (char*) malloc(sizeof(char)*MAX_LEN);
+   	while((c = getc(fp)) != EOF){
+       	if(c == '\n')
+	  		break;
+       	cmdline[pos++] = c;
+   	}
+   	if(c == EOF && pos == 0) 
       return NULL;
    cmdline[pos] = '\0';
    return cmdline;
