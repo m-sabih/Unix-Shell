@@ -63,7 +63,7 @@ char** tokenize(char* cmdline){
 	}
 	char* token;
 	int argnum=0;
-	int in;
+	int in,out;
    	token=strtok(cmdline," ");
    	while(token!=NULL){
    		if(strstr(token,"<")){
@@ -71,6 +71,14 @@ char** tokenize(char* cmdline){
 	      	in = open(token, O_RDONLY);
 	      	dup2(in, STDIN_FILENO);
 		  	close(in);
+	      	token = strtok (NULL, " ");
+	      	continue;
+   		}
+   		if(strstr(token,">")){
+   			token = strtok (NULL, " ");
+	      	out = open(token, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+	      	dup2(out, STDOUT_FILENO);
+		  	close(out);
 	      	token = strtok (NULL, " ");
 	      	continue;
    		}
