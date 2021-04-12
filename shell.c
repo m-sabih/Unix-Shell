@@ -1,7 +1,8 @@
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <fcntl.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <pwd.h>
@@ -14,16 +15,17 @@ int execute(char* arglist[]);
 char** tokenize(char* cmdline);
 char* read_cmd(FILE*);
 void handler(int n);
+int inp,out;
 
 int main(){
+	inp=dup(0);
+   	out=dup(1);
 	signal(SIGINT,SIG_IGN);
 	char *cmdline;
 	char** arglist;   
 	while((cmdline = read_cmd(stdin)) != NULL){
 		if((arglist = tokenize(cmdline)) != NULL){
-			execute(arglist);
-			for(int j=0; j < MAXARGS+1; j++)
-				free(arglist[j]);
+			execute(arglist);						
 			free(arglist);
 			free(cmdline);
 		}
@@ -46,15 +48,11 @@ int execute(char* arglist[]){
 			exit(1);
 		default:
 			waitpid(cpid, &status, 0);
-			signal(SIGCHLD,handler);
+			dup2(inp,0);
+         	dup2(out,1);
 			printf("child exited with status %d \n", status >> 8);
 		return 0;
 	}
-}
-
-void handler(int n){
-	while(waitpid(-1,NULL,WNOHANG)>0){}
-		printf("\n");
 }
 
 char** tokenize(char* cmdline){
@@ -63,23 +61,23 @@ char** tokenize(char* cmdline){
 		arglist[j] = (char*)malloc(sizeof(char)* ARGLEN);
 		bzero(arglist[j],ARGLEN);
 	}
-	if(cmdline[0] == '\0')
-		return NULL;
-	int argnum = 0;
-	char*cp = cmdline;
-	char*start;
-	int len;
-	while(*cp != '\0'){
-		while(*cp == ' ' || *cp == '\t')
-			cp++;
-		start = cp;
-		len = 1;
-		while(*++cp != '\0' && !(*cp ==' ' || *cp == '\t'))
-			len++;
-		strncpy(arglist[argnum], start, len);
-		arglist[argnum][len] = '\0';
-		argnum++;
-	}
+	char* token;
+	int argnum=0;
+	int in;
+   	token=strtok(cmdline," ");
+   	while(token!=NULL){
+   		if(strstr(token,"<")){
+   			token = strtok (NULL, " ");
+	      	in = open(token, O_RDONLY);
+	      	dup2(in, STDIN_FILENO);
+		  	close(in);
+	      	token = strtok (NULL, " ");
+	      	continue;
+   		}
+   		arglist[argnum]=token;
+      	argnum++;
+      	token=strtok(NULL," ");
+   	}
 	arglist[argnum] = NULL;
 	return arglist;
 }      
