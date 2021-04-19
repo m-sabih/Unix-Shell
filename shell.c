@@ -11,13 +11,14 @@
 #define MAXARGS 10
 #define ARGLEN 30
 
-int execute(char* arglist[]);
+int execute(char* arglist[],int background);
 char** tokenize(char* cmdline);
 char* read_cmd(FILE*);
 void handler(int n);
 int pipeIndex(char*);
 void execute_pipe(char* ,int);
-void pipe_cmd(char** cmd1, char** );
+void pipe_cmd(char** cmd1, char**);
+void child_handler(int);
 int inp,out;
 
 int main(){
@@ -45,19 +46,27 @@ int main(){
       	total_commands[commands_count]='\0';
 
       	for(int com=0;com<commands_count;com++){
+      		int background=0;
       		int len=strlen(total_commands[com]);
 	   		char* ncmdline=(char*) malloc(sizeof(char*)*len);
 	   		bzero(ncmdline,len);
 	      	char *loc;
 	      	int pipeIndex=0;
 	     	
+			if(total_commands[com][len-1]=='&'){
+	     	background=1;
+	     	for(int p=0;p<len-2;p++){
+	     		ncmdline[p]=total_commands[com][p];
+	     	}
+	     }
+	     else{
 	     	int cmd_ind=0;
 	     	while(cmd_ind<len){
 	     		ncmdline[cmd_ind]=total_commands[com][cmd_ind];
 	     		cmd_ind++;
 	     	}
 	     	ncmdline[cmd_ind]='\0';
-
+	     }	     	
 	     	loc = strchr(ncmdline, '|');
 	     	pipeIndex=loc-ncmdline;
 			if(loc != NULL){
@@ -66,7 +75,7 @@ int main(){
 			}
 			else{
 				if((arglist = tokenize(ncmdline)) != NULL){
-					execute(arglist);						
+					execute(arglist,background);						
 					free(arglist);
 					free(ncmdline);
 				}
@@ -78,7 +87,7 @@ int main(){
 	return 0;
 }
 
-int execute(char* arglist[]){
+int execute(char* arglist[],int background){
 	int status;
 	int cpid = fork();
 	switch(cpid){
@@ -86,16 +95,29 @@ int execute(char* arglist[]){
 			perror("fork failed");
 			exit(1);
 		case 0:
+			if(background==1)
+      	 		setpgrp();
 			signal(SIGINT,SIG_DFL);
 			execvp(arglist[0], arglist);
 			perror("Command not found...");
 			exit(1);
 		default:
-			waitpid(cpid, &status, 0);
-			dup2(inp,0);
-			dup2(out,1);
+			if (background == 0){
+	        	waitpid(cpid, &status, 0);         	
+	         	dup2(inp,0);
+	         	dup2(out,1);
+    		}
+    		else{
+       			printf("Process created with PID: %d\n",cpid);
+				//signal(SIGCHLD,child_handler);	       	
+       	}
 		return 0;
 	}
+}
+
+void child_handler(int n){
+	while(waitpid(-1,NULL,WNOHANG)>0){}
+	printf("\n");
 }
 
 char** tokenize(char* cmdline){
