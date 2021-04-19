@@ -109,7 +109,7 @@ int execute(char* arglist[],int background){
     		}
     		else{
        			printf("Process created with PID: %d\n",cpid);
-				//signal(SIGCHLD,child_handler);	       	
+				signal(SIGCHLD,child_handler);	       	
        	}
 		return 0;
 	}
