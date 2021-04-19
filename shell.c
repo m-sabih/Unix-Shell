@@ -26,27 +26,53 @@ int main(){
 	signal(SIGINT,SIG_IGN);
 	char *cmdline;
 	char** arglist;   
-	while((cmdline = read_cmd(stdin)) != NULL){
-		int pipeIndex=0;
-		int m=0;	
+	while((cmdline = read_cmd(stdin)) != NULL){		
+		int m=0,colon_count=0;
+	    
+	    char **total_commands=(char**)malloc(sizeof(char*)*MAXARGS+1);
+   		for (int t=0;t<colon_count;t++){
+      		total_commands[t]=(char*)malloc(sizeof(char)*ARGLEN);
+      		bzero(total_commands[t],ARGLEN);
+   		}
+		char* colon_token;
+      	int commands_count=0;
+      	colon_token=strtok(cmdline,";");
+      	while(colon_token!=NULL){
+        	total_commands[commands_count]=colon_token;
+        	commands_count++;
+        	colon_token=strtok(NULL,";");
+      	}
+      	total_commands[commands_count]='\0';
 
-		char *loc;
-		char* pipeToken;
-		pipeToken=strtok(cmdline,"\0");
-		loc = strchr(pipeToken, '|');
-		pipeIndex=loc-pipeToken;
+      	for(int com=0;com<commands_count;com++){
+      		int len=strlen(total_commands[com]);
+	   		char* ncmdline=(char*) malloc(sizeof(char*)*len);
+	   		bzero(ncmdline,len);
+	      	char *loc;
+	      	int pipeIndex=0;
+	     	
+	     	int cmd_ind=0;
+	     	while(cmd_ind<len){
+	     		ncmdline[cmd_ind]=total_commands[com][cmd_ind];
+	     		cmd_ind++;
+	     	}
+	     	ncmdline[cmd_ind]='\0';
 
-		if(loc != NULL){
-			execute_pipe(cmdline,pipeIndex);
-			wait(NULL);
-		}
-		else{
-			if((arglist = tokenize(cmdline)) != NULL){
-				execute(arglist);						
-				free(arglist);
-				free(cmdline);
+	     	loc = strchr(ncmdline, '|');
+	     	pipeIndex=loc-ncmdline;
+			if(loc != NULL){
+				execute_pipe(ncmdline,pipeIndex);
+				wait(NULL);
+			}
+			else{
+				if((arglist = tokenize(ncmdline)) != NULL){
+					execute(arglist);						
+					free(arglist);
+					free(ncmdline);
+				}
 			}
 		}
+  	   	free(total_commands);
 	}
 	printf("\n");
 	return 0;
@@ -68,7 +94,6 @@ int execute(char* arglist[]){
 			waitpid(cpid, &status, 0);
 			dup2(inp,0);
 			dup2(out,1);
-			printf("child exited with status %d \n", status >> 8);
 		return 0;
 	}
 }
