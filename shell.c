@@ -19,6 +19,7 @@ int pipeIndex(char*);
 void execute_pipe(char* ,int);
 void pipe_cmd(char** cmd1, char**);
 void child_handler(int);
+void SaveToFile(char* cmdline);
 int inp,out;
 
 int main(){
@@ -54,19 +55,22 @@ int main(){
 	      	int pipeIndex=0;
 	     	
 			if(total_commands[com][len-1]=='&'){
-	     	background=1;
-	     	for(int p=0;p<len-2;p++){
-	     		ncmdline[p]=total_commands[com][p];
+				printf("%c\n", total_commands[com][len-1]);
+		     	background=1;
+		     	for(int p=0;p<len-1;p++){
+		     		ncmdline[p]=total_commands[com][p];
+		     	}
 	     	}
-	     }
-	     else{
-	     	int cmd_ind=0;
-	     	while(cmd_ind<len){
-	     		ncmdline[cmd_ind]=total_commands[com][cmd_ind];
-	     		cmd_ind++;
-	     	}
-	     	ncmdline[cmd_ind]='\0';
-	     }	     	
+	     	else{
+	     		int cmd_ind=0;
+	     		while(cmd_ind<len){
+	     			ncmdline[cmd_ind]=total_commands[com][cmd_ind];
+	     			cmd_ind++;
+	     		}
+	     		ncmdline[cmd_ind]='\0';
+	     	}	     	
+	     	SaveToFile(ncmdline);
+
 	     	loc = strchr(ncmdline, '|');
 	     	pipeIndex=loc-ncmdline;
 			if(loc != NULL){
@@ -87,9 +91,49 @@ int main(){
 	return 0;
 }
 
+void SaveToFile(char* cmdline){
+    int linesCount=0;
+    char line[500];
+    FILE *lineCheck=fopen("history.txt","r");
+    if(lineCheck !=NULL)
+    {
+        while(fscanf(lineCheck,"%*s")!=EOF){
+        	linesCount++;
+        }
+        fclose(lineCheck);
+    }
+    else
+        linesCount=0;
+    if(linesCount<10)
+    {
+        FILE *fp=fopen("history.txt","a+");
+        fprintf(fp,"%s\n",cmdline);
+        fclose(fp);     
+    }
+    else
+    {
+        FILE *main=fopen("history.txt","r");
+        FILE *temp=fopen("temp.txt","w");
+        int j=1; 
+        while(j<=9)
+        {
+	        fscanf(main,"%s",line); 
+	        printf("%s\n", line);
+	        fprintf(temp,"%s\n",line);
+	        j++;
+        }
+	    fprintf(temp,"%s\n",cmdline);
+	    fclose(main); 
+	    fclose(temp);
+	    remove("history.txt");
+	    rename("temp.txt","history.txt");
+    }
+}
+
 int execute(char* arglist[],int background){
 	int status;
 	int cpid = fork();
+	printf("background %d\n", background);
 	switch(cpid){
 		case -1:
 			perror("fork failed");
