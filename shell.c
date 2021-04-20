@@ -55,7 +55,6 @@ int main(){
 	      	int pipeIndex=0;
 	     	
 			if(total_commands[com][len-1]=='&'){
-				printf("%c\n", total_commands[com][len-1]);
 		     	background=1;
 		     	for(int p=0;p<len-1;p++){
 		     		ncmdline[p]=total_commands[com][p];
@@ -97,9 +96,9 @@ void SaveToFile(char* cmdline){
     FILE *lineCheck=fopen("history.txt","r");
     if(lineCheck !=NULL)
     {
-        while(fscanf(lineCheck,"%*s")!=EOF){
-        	linesCount++;
-        }
+    	while((fgets(line, 500, lineCheck))!=NULL ){
+      		linesCount++;
+   		}
         fclose(lineCheck);
     }
     else
@@ -107,22 +106,24 @@ void SaveToFile(char* cmdline){
     if(linesCount<10)
     {
         FILE *fp=fopen("history.txt","a+");
-        fprintf(fp,"%s\n",cmdline);
+        fputs(cmdline,fp);
+        fputs("\n",fp);
         fclose(fp);     
     }
     else
     {
         FILE *main=fopen("history.txt","r");
         FILE *temp=fopen("temp.txt","w");
-        int j=1; 
+        int j=1;
+        fgets(line, 500, main);
         while(j<=9)
         {
-	        fscanf(main,"%s",line); 
-	        printf("%s\n", line);
-	        fprintf(temp,"%s\n",line);
+	        fgets(line, 500, main);
+	        fputs(line,temp);
 	        j++;
         }
-	    fprintf(temp,"%s\n",cmdline);
+	    fputs(cmdline,temp);
+        fputs("\n",temp);
 	    fclose(main); 
 	    fclose(temp);
 	    remove("history.txt");
@@ -133,7 +134,6 @@ void SaveToFile(char* cmdline){
 int execute(char* arglist[],int background){
 	int status;
 	int cpid = fork();
-	printf("background %d\n", background);
 	switch(cpid){
 		case -1:
 			perror("fork failed");
