@@ -11,16 +11,15 @@
 #define MAXARGS 10
 #define ARGLEN 30
 
-int execute(char* arglist[],int);
-char** tokenize(char*);
-char* read_cmd(FILE*);
-void handler(int);
-int pipeIndex(char*);
-void execute_pipe(char* ,int);
-void pipe_cmd(char**, char**);
-void child_handler(int);
+int Execute(char* arglist[],int);
+char** Tokenize(char*);
+char* ReadCmd(FILE*);
+void ExecutePipe(char* ,int);
+void PipeCmd(char**, char**);
+void ChildHandler(int);
 void SaveCommandToFile(char*);
-char* getCommandFromFile(char*);
+char* GetCommandFromFile(char*);
+int BuiltInCd(char* arglist[]);
 int inp,out;
 
 int main(){
@@ -29,7 +28,7 @@ int main(){
 	signal(SIGINT,SIG_IGN);
 	char *cmdline;
 	char** arglist;   
-	while((cmdline = read_cmd(stdin)) != NULL){		
+	while((cmdline = ReadCmd(stdin)) != NULL){		
 		int m=0,colon_count=0;
 	    
 	    char **total_commands=(char**)malloc(sizeof(char*)*MAXARGS+1);
@@ -56,7 +55,7 @@ int main(){
 	      	int pipeIndex=0;
 	     	
 	     	if(total_commands[com][0]=='!'){	     		
-	     		ncmdline = getCommandFromFile(total_commands[com]);
+	     		ncmdline = GetCommandFromFile(total_commands[com]);
 	     		if(strcmp(ncmdline,"event not found")==0){
 	     			printf("-bash: %s: event not found\n",total_commands[com]);
 	     			break;
@@ -76,17 +75,21 @@ int main(){
 	     		}
 	     		ncmdline[cmd_ind]='\0';
 	     	}	     	
+	     	printf("%s\n",ncmdline);
 	     	SaveCommandToFile(ncmdline);
 
 	     	loc = strchr(ncmdline, '|');
 	     	pipeIndex=loc-ncmdline;
 			if(loc != NULL){
-				execute_pipe(ncmdline,pipeIndex);
+				ExecutePipe(ncmdline,pipeIndex);
 				wait(NULL);
 			}
 			else{
-				if((arglist = tokenize(ncmdline)) != NULL){
-					execute(arglist,background);						
+				if((arglist = Tokenize(ncmdline)) != NULL){
+					if (strcmp(arglist[0],"cd") == 0)
+	         			BuiltInCd(arglist);
+	         		else
+						Execute(arglist,background);						
 					free(arglist);
 					free(ncmdline);
 				}
@@ -139,7 +142,7 @@ void SaveCommandToFile(char* cmdline){
     }
 }
 
-char* getCommandFromFile(char* commandNumber){   
+char* GetCommandFromFile(char* commandNumber){   
     int linesCount=0;    
     char* line=(char*)malloc(sizeof(char)*500);
     char* command=strtok(commandNumber,"!");
@@ -148,6 +151,7 @@ char* getCommandFromFile(char* commandNumber){
     {
     	while((fgets(line, 500, commandsHistory))!=NULL ){
       		linesCount++;
+      		//printf("command count %d Line: %s ", linesCount,line);
       		if(linesCount==atoi(command))
 	        {   
 	            command=line;
@@ -166,7 +170,7 @@ char* getCommandFromFile(char* commandNumber){
     return "event not found";
 }
 
-int execute(char* arglist[],int background){
+int Execute(char* arglist[],int background){
 	int status;
 	int cpid = fork();
 	switch(cpid){
@@ -188,18 +192,18 @@ int execute(char* arglist[],int background){
     		}
     		else{
        			printf("Process created with PID: %d\n",cpid);
-				signal(SIGCHLD,child_handler);	       	
+				signal(SIGCHLD,ChildHandler);	       	
        	}
 		return 0;
 	}
 }
 
-void child_handler(int n){
+void ChildHandler(int n){
 	while(waitpid(-1,NULL,WNOHANG)>0){}
 	printf("\n");
 }
 
-char** tokenize(char* cmdline){
+char** Tokenize(char* cmdline){
 	char** arglist = (char**)malloc(sizeof(char*)* (MAXARGS+1));
 	for(int j=0; j < MAXARGS+1; j++){
 		arglist[j] = (char*)malloc(sizeof(char)* ARGLEN);
@@ -234,7 +238,7 @@ char** tokenize(char* cmdline){
 	return arglist;
 }      
 
-char* read_cmd(FILE* fp){
+char* ReadCmd(FILE* fp){
 	char prompt[1024];
 	uid_t uid = getuid();
 	struct passwd *psw = getpwuid(uid);
@@ -254,7 +258,7 @@ char* read_cmd(FILE* fp){
 	return cmdline;
 }
 
-void execute_pipe(char* cmdline,int index){
+void ExecutePipe(char* cmdline,int index){
 	char **arg1=(char**)malloc(sizeof(char*)*MAXARGS+1);
 	for (int i=0;i<MAXARGS;i++){
 		arg1[i]=(char*)malloc(sizeof(char)*ARGLEN);
@@ -294,10 +298,10 @@ void execute_pipe(char* cmdline,int index){
 	arg2[ind]=NULL;
 	int pid=fork();
 	if(pid==0)
-		pipe_cmd(arg1,arg2);
+		PipeCmd(arg1,arg2);
 }
 
-void pipe_cmd(char** cmd1, char** cmd2) {
+void PipeCmd(char** cmd1, char** cmd2) {
 	int fds[2]; 
 	int status;
 	pipe(fds);
@@ -317,4 +321,18 @@ void pipe_cmd(char** cmd1, char** cmd2) {
 		close(fds[1]);
 		execvp(cmd1[0], cmd1);
 	}
+}
+
+int BuiltInCd(char** arglist){
+	if (arglist[1] == NULL) {
+		chdir(getenv("HOME")); 
+		return 1;
+	}
+	else{ 
+		if (chdir(arglist[1]) == -1) {
+			printf(" %s: no such directory\n", arglist[1]);
+            return -1;
+		}
+	}
+	return 0;
 }
