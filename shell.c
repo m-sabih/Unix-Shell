@@ -11,15 +11,16 @@
 #define MAXARGS 10
 #define ARGLEN 30
 
-int execute(char* arglist[],int background);
-char** tokenize(char* cmdline);
+int execute(char* arglist[],int);
+char** tokenize(char*);
 char* read_cmd(FILE*);
-void handler(int n);
+void handler(int);
 int pipeIndex(char*);
 void execute_pipe(char* ,int);
-void pipe_cmd(char** cmd1, char**);
+void pipe_cmd(char**, char**);
 void child_handler(int);
-void SaveToFile(char* cmdline);
+void SaveCommandToFile(char*);
+char* getCommandFromFile(char*);
 int inp,out;
 
 int main(){
@@ -54,7 +55,14 @@ int main(){
 	      	char *loc;
 	      	int pipeIndex=0;
 	     	
-			if(total_commands[com][len-1]=='&'){
+	     	if(total_commands[com][0]=='!'){	     		
+	     		ncmdline = getCommandFromFile(total_commands[com]);
+	     		if(strcmp(ncmdline,"event not found")==0){
+	     			printf("-bash: %s: event not found\n",total_commands[com]);
+	     			break;
+	     		}
+	     	}
+			else if(total_commands[com][len-1]=='&'){
 		     	background=1;
 		     	for(int p=0;p<len-1;p++){
 		     		ncmdline[p]=total_commands[com][p];
@@ -68,7 +76,7 @@ int main(){
 	     		}
 	     		ncmdline[cmd_ind]='\0';
 	     	}	     	
-	     	SaveToFile(ncmdline);
+	     	SaveCommandToFile(ncmdline);
 
 	     	loc = strchr(ncmdline, '|');
 	     	pipeIndex=loc-ncmdline;
@@ -90,7 +98,7 @@ int main(){
 	return 0;
 }
 
-void SaveToFile(char* cmdline){
+void SaveCommandToFile(char* cmdline){
     int linesCount=0;
     char line[500];
     FILE *lineCheck=fopen("history.txt","r");
@@ -129,6 +137,33 @@ void SaveToFile(char* cmdline){
 	    remove("history.txt");
 	    rename("temp.txt","history.txt");
     }
+}
+
+char* getCommandFromFile(char* commandNumber){   
+    int linesCount=0;    
+    char* line=(char*)malloc(sizeof(char)*500);
+    char* command=strtok(commandNumber,"!");
+    FILE *commandsHistory=fopen("history.txt","r");
+    if(command !=NULL)
+    {
+    	while((fgets(line, 500, commandsHistory))!=NULL ){
+      		linesCount++;
+      		if(linesCount==atoi(command))
+	        {   
+	            command=line;
+	            memset(command+strlen(command)-1,'\0',1);
+	            return command;
+	        }
+   		}
+   		if(strcmp(command,"-1")==0)
+	    {
+	        command=line;
+	        memset(command+strlen(command)-1,'\0',1);
+	        return command;
+	    }
+        fclose(commandsHistory);
+    }    
+    return "event not found";
 }
 
 int execute(char* arglist[],int background){
