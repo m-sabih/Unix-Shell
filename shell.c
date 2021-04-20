@@ -200,7 +200,10 @@ int Execute(char* arglist[],int background){
 			exit(1);
 		default:
 			if (background == 0){
-	        	waitpid(cpid, &status, 0);         	
+	        	waitpid(cpid, &status, 0);
+	        	if (WIFEXITED(status)) {
+				    printf("%d \n", WEXITSTATUS(status));
+				}        	
 	         	dup2(inp,0);
 	         	dup2(out,1);
     		}
