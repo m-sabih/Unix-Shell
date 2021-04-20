@@ -364,7 +364,6 @@ void BuiltInJob() {
 	for(int i=0;i<totalJobs;i++){
 		snprintf(dirName, sizeof(dirName), "/proc/%d/stat", jobs[i]); 
 		DIR* dp = opendir(dirName);
-
 		fp = fopen(dirName, "r");
 
 		if (fp) {
