@@ -22,6 +22,8 @@ void SaveCommandToFile(char*);
 char* GetCommandFromFile(char*);
 int BuiltInCd(char* arglist[]);
 void BuiltInJob();
+void BuiltInKill(char*);
+void BuiltInHelp(char*);
 int inp,out;
 
 static int jobs[100];
@@ -96,6 +98,10 @@ int main(){
 	         			exit(0);
 	         		else if (strcmp(arglist[0],"jobs") == 0) 
 	         			BuiltInJob();
+	         		else if (strcmp(arglist[0],"kill") == 0)	         	
+	         			BuiltInKill(arglist[1]);
+	         		else if (strcmp(arglist[0],"help") == 0)	         		
+	         			BuiltInHelp(arglist[1]);
 	         		else
 						Execute(arglist,background);						
 					free(arglist);
@@ -381,4 +387,24 @@ void BuiltInJob() {
 		}
 		closedir(dp);
 	}		
+}
+
+void BuiltInKill(char* pid){
+	int n=atoi(pid);
+	kill(n, SIGKILL);
+}
+
+void BuiltInHelp(char *arg){
+	if(arg == NULL)
+		printf("Shell built in commands include \tkill, jobs, cd, exit. \nUse help [command] to get more details \n");
+	else if (strcmp(arg,"cd") == 0) 
+		printf("cd command is used to change directories: cd [path] \n");
+	else if (strcmp(arg,"jobs") == 0) 
+		printf("jobs command is used to tell about the background processes: jobs \n");
+	else if (strcmp(arg,"exit") == 0) 
+		printf("exit is used to exit shell: exit \n");
+	else if (strcmp(arg,"kill") == 0) 
+		printf("kill command is used to kill a process with a specific id: kill[pid] \n");	
+	else
+		printf("No related command found, try help \n");
 }
