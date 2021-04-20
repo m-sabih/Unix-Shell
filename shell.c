@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <pwd.h>
+#include<dirent.h>
 
 #define MAX_LEN 512
 #define MAXARGS 10
@@ -20,7 +21,11 @@ void ChildHandler(int);
 void SaveCommandToFile(char*);
 char* GetCommandFromFile(char*);
 int BuiltInCd(char* arglist[]);
+void BuiltInJob();
 int inp,out;
+
+static int jobs[100];
+static int totalJobs=0;
 
 int main(){
 	inp=dup(0);
@@ -75,7 +80,6 @@ int main(){
 	     		}
 	     		ncmdline[cmd_ind]='\0';
 	     	}	     	
-	     	printf("%s\n",ncmdline);
 	     	SaveCommandToFile(ncmdline);
 
 	     	loc = strchr(ncmdline, '|');
@@ -88,6 +92,10 @@ int main(){
 				if((arglist = Tokenize(ncmdline)) != NULL){
 					if (strcmp(arglist[0],"cd") == 0)
 	         			BuiltInCd(arglist);
+	         		else if (strcmp(arglist[0],"exit") == 0) 
+	         			exit(0);
+	         		else if (strcmp(arglist[0],"jobs") == 0) 
+	         			BuiltInJob();
 	         		else
 						Execute(arglist,background);						
 					free(arglist);
@@ -191,16 +199,17 @@ int Execute(char* arglist[],int background){
 	         	dup2(out,1);
     		}
     		else{
-       			printf("Process created with PID: %d\n",cpid);
-				signal(SIGCHLD,ChildHandler);	       	
-       	}
+       			printf("[%d] %d\n",totalJobs+1,cpid);
+				signal(SIGCHLD,ChildHandler);	 
+				jobs[totalJobs]=cpid;
+       			totalJobs++;      	
+       		}
 		return 0;
 	}
 }
 
 void ChildHandler(int n){
-	while(waitpid(-1,NULL,WNOHANG)>0){}
-	printf("\n");
+	while(waitpid(-1,NULL,WNOHANG)>0){}	
 }
 
 char** Tokenize(char* cmdline){
@@ -335,4 +344,41 @@ int BuiltInCd(char** arglist){
 		}
 	}
 	return 0;
+}
+
+void BuiltInJob() {	
+	char dirName[100];
+	char name[100];
+	char state;
+	long pid;
+	FILE * fp = NULL;  
+	struct dirent * entry;
+
+	int jobsCount=0;
+	for(int i=0;i<totalJobs;i++){
+		snprintf(dirName, sizeof(dirName), "/proc/%d/stat", jobs[i]); 
+		DIR* dp = opendir(dirName);
+
+		fp = fopen(dirName, "r");
+
+		if (fp) {
+			jobsCount++;
+			fscanf(fp, "%ld %s %c", &pid, name, &state);
+			switch (state) {
+				case 'R':
+				case 'S':
+				case 'D':
+				case 'I':
+					printf("[%d]     Running		%d\n",jobsCount,jobs[i]);
+					break;				
+				case 'T':
+					printf("[%d]     Stopped 		%d\n",jobsCount,jobs[i]);
+					break;
+				default:
+					break;
+				}
+			fclose(fp);
+		}
+		closedir(dp);
+	}		
 }
