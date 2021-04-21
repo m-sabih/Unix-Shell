@@ -6,7 +6,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <pwd.h>
-#include<dirent.h>
+#include <dirent.h>
+#include <stdbool.h>
 
 #define MAX_LEN 512
 #define MAXARGS 10
@@ -53,16 +54,21 @@ int main(){
       	}
       	total_commands[commands_count]='\0';
 
-      	for(int com=0;com<commands_count;com++){
-      		int returnStatus = 0;
-      		int background=0;
-      		bool ifCheck=false;
+      	int ifCheck=0;
+      	int returnStatus = 0;
+      	bool skipNext=false;
+      	for(int com=0;com<commands_count;com++){      		
+      		int background=0;      		
       		int len=strlen(total_commands[com]);
 	   		char* ncmdline=(char*) malloc(sizeof(char*)*len);
 	   		bzero(ncmdline,len);
 	      	char *loc;
 	      	int pipeIndex=0;
-	     	
+	     	bool isIf=false;	     	
+	     	if(skipNext==true){
+	     		skipNext=false;
+	     		continue;
+	     	}
 	     	if(total_commands[com][0]=='!'){	     		
 	     		ncmdline = GetCommandFromFile(total_commands[com]);
 	     		if(strcmp(ncmdline,"event not found")==0){
@@ -76,7 +82,8 @@ int main(){
 		     		ncmdline[p]=total_commands[com][p];
 		     	}
 	     	}
-	     	else if(strstr(total_commands[com],"if")!=NULL){	     		
+	     	else if(strstr(total_commands[com],"if")!=NULL){
+	     		isIf=true;	     		
 	     		int cmd_ind=0;
 	     		int cmd_ind2=3;
 	     		while(cmd_ind2<len){
@@ -92,20 +99,76 @@ int main(){
 	     			ncmdline[cmd_ind]='\0';	     		
 	     	}
 	     	else if(strstr(total_commands[com],"then")!=NULL){
-	     		if(if)     		
-	     		int cmd_ind=0;
-	     		int cmd_ind2=3;
-	     		while(cmd_ind2<len){
-	     			ncmdline[cmd_ind]=total_commands[com][cmd_ind2];
-	     			cmd_ind++;
-	     			cmd_ind2++;	
-	     		}
-	     		if(cmd_ind==0){
-	     			printf("Invalid statement if\n");
-	     			break;
+	     		if(ifCheck==1){
+	     			int t=0;
+	     			if(total_commands[com+1]!=NULL){
+	     				if(strstr(total_commands[com+1],"fi")==NULL){	     						     			
+	     					t++;
+	     				}
+	     			}
+	     			else{
+	     				printf("Invalid syntax for if\n");
+	     				break;
+	     			}
+	     			if(total_commands[com+2]!=NULL){
+	     				if(strstr(total_commands[com+2],"fi")==NULL){	     						     			
+	     					t++;
+	     				}
+	     			}
+	     			else{
+	     				printf("Invalid syntax for if\n");
+	     				break;
+	     			}
+	     			if(t==2){
+	     				printf("Invalid syntax for if\n");
+	     				skipNext=true;
+	     				break;
+	     			}
+		     		int cmd_ind=0;
+		     		int cmd_ind2=6;
+		     		while(cmd_ind2<len){
+		     			ncmdline[cmd_ind]=total_commands[com][cmd_ind2];
+		     			cmd_ind++;
+		     			cmd_ind2++;	
+		     		}
+		     		if(cmd_ind==0){
+		     			printf("Invalid statement then\n");
+		     			break;
+		     		}
+		     		else
+		     			ncmdline[cmd_ind]='\0';
 	     		}
 	     		else
-	     			ncmdline[cmd_ind]='\0';	     		
+	     			continue;
+	     	}
+	     	else if(strstr(total_commands[com],"else")!=NULL){		     	
+	     		if(ifCheck==2){     		
+	     			if(total_commands[com+1]!=NULL){
+	     				if(strstr(total_commands[com+1],"fi")==NULL){
+	     					break;
+	     				}
+	     				skipNext=true;
+	     			}
+		     		else{
+	     				printf("Invalid syntax for if\n");
+	     				break;
+	     			}
+		     		int cmd_ind=0;
+		     		int cmd_ind2=6;
+		     		while(cmd_ind2<len){
+		     			ncmdline[cmd_ind]=total_commands[com][cmd_ind2];
+		     			cmd_ind++;
+		     			cmd_ind2++;	
+		     		}
+		     		if(cmd_ind==0){
+		     			printf("Invalid statement then\n");
+		     			break;
+		     		}
+		     		else
+		     			ncmdline[cmd_ind]='\0';
+	     		}
+	     		else
+	     			break;
 	     	}
 	     	else{
 	     		int cmd_ind=0;
@@ -136,8 +199,15 @@ int main(){
 	         		else if (strcmp(arglist[0],"help") == 0)	         		
 	         			BuiltInHelp(arglist[1]);
 	         		else{
-						returnStatus = Execute(arglist,background);	
-						printf("%d\n", returnStatus);						         			
+						returnStatus = Execute(arglist,background);
+						if(returnStatus==0 && isIf==true){
+							ifCheck=1;	
+							isIf=false;
+						}
+						else if(returnStatus==1 && isIf==true){
+							ifCheck=2;	
+							isIf=false;
+						}						         			
 					}
 					free(arglist);
 					free(ncmdline);
