@@ -1,0 +1,10 @@
+top
+ps -a
+ps -aux
+ls -a
+cd
+ls
+top
+ps -a
+cat shell.c
+more shell.c
