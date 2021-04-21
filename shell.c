@@ -36,10 +36,10 @@ int main(){
 	char *cmdline;
 	char** arglist;   
 	while((cmdline = ReadCmd(stdin)) != NULL){		
-		int m=0,colon_count=0;
+		int m=0;
 	    
 	    char **total_commands=(char**)malloc(sizeof(char*)*MAXARGS+1);
-   		for (int t=0;t<colon_count;t++){
+   		for (int t=0;t<MAXARGS;t++){
       		total_commands[t]=(char*)malloc(sizeof(char)*ARGLEN);
       		bzero(total_commands[t],ARGLEN);
    		}
@@ -54,7 +54,9 @@ int main(){
       	total_commands[commands_count]='\0';
 
       	for(int com=0;com<commands_count;com++){
+      		int returnStatus = 0;
       		int background=0;
+      		bool ifCheck=false;
       		int len=strlen(total_commands[com]);
 	   		char* ncmdline=(char*) malloc(sizeof(char*)*len);
 	   		bzero(ncmdline,len);
@@ -74,11 +76,42 @@ int main(){
 		     		ncmdline[p]=total_commands[com][p];
 		     	}
 	     	}
+	     	else if(strstr(total_commands[com],"if")!=NULL){	     		
+	     		int cmd_ind=0;
+	     		int cmd_ind2=3;
+	     		while(cmd_ind2<len){
+	     			ncmdline[cmd_ind]=total_commands[com][cmd_ind2];
+	     			cmd_ind++;
+	     			cmd_ind2++;	
+	     		}
+	     		if(cmd_ind==0){
+	     			printf("Invalid statement if\n");
+	     			break;
+	     		}
+	     		else
+	     			ncmdline[cmd_ind]='\0';	     		
+	     	}
+	     	else if(strstr(total_commands[com],"then")!=NULL){
+	     		if(if)     		
+	     		int cmd_ind=0;
+	     		int cmd_ind2=3;
+	     		while(cmd_ind2<len){
+	     			ncmdline[cmd_ind]=total_commands[com][cmd_ind2];
+	     			cmd_ind++;
+	     			cmd_ind2++;	
+	     		}
+	     		if(cmd_ind==0){
+	     			printf("Invalid statement if\n");
+	     			break;
+	     		}
+	     		else
+	     			ncmdline[cmd_ind]='\0';	     		
+	     	}
 	     	else{
 	     		int cmd_ind=0;
 	     		while(cmd_ind<len){
 	     			ncmdline[cmd_ind]=total_commands[com][cmd_ind];
-	     			cmd_ind++;
+	     			cmd_ind++;	     			
 	     		}
 	     		ncmdline[cmd_ind]='\0';
 	     	}	     	
@@ -102,8 +135,10 @@ int main(){
 	         			BuiltInKill(arglist[1]);
 	         		else if (strcmp(arglist[0],"help") == 0)	         		
 	         			BuiltInHelp(arglist[1]);
-	         		else
-						Execute(arglist,background);						
+	         		else{
+						returnStatus = Execute(arglist,background);	
+						printf("%d\n", returnStatus);						         			
+					}
 					free(arglist);
 					free(ncmdline);
 				}
@@ -185,7 +220,7 @@ char* GetCommandFromFile(char* commandNumber){
 }
 
 int Execute(char* arglist[],int background){
-	int status;
+	int status, childStatus=0;
 	int cpid = fork();
 	switch(cpid){
 		case -1:
@@ -202,7 +237,8 @@ int Execute(char* arglist[],int background){
 			if (background == 0){
 	        	waitpid(cpid, &status, 0);
 	        	if (WIFEXITED(status)) {
-				    printf("%d \n", WEXITSTATUS(status));
+				    if(WEXITSTATUS(status)==1)
+				    	childStatus=1;
 				}        	
 	         	dup2(inp,0);
 	         	dup2(out,1);
@@ -213,7 +249,7 @@ int Execute(char* arglist[],int background){
 				jobs[totalJobs]=cpid;
        			totalJobs++;      	
        		}
-		return 0;
+		return childStatus;
 	}
 }
 
