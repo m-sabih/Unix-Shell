@@ -1,30 +1,22 @@
-# README #
+# UNIX Shell Code #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+Implemented Features:
 
-### What is this repository for? ###
+- Provides basic shell funcationality
+- Displays prompt with pwd
+- Has input/output redirection feature
+- Support pipe
+- Has functionality to send processes to background
+- Is able to execute semi-colon separated commands
+- Provides feature of viewing history
+- Has built-in commands like cd, exit,jobs,kill,help incorporated in it
+- Is able to handle execution of control structures
+- Constitutes of multiple c files to make code manageable
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+Code Status:
+- Working perfectly fine the mentioned implemented funcationality
 
-### How do I get set up? ###
-
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
-
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
-
+Bugs found:
+- The implementation of control structures is not flexible
+- edge cases have not been dealt for all cases
+- The if control structure is not stored properly in history file
