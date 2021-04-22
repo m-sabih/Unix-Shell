@@ -86,7 +86,7 @@ int main(){
 	     		while(cmd_ind2<len){
 	     			ncmdline[cmd_ind]=total_commands[com][cmd_ind2];
 	     			cmd_ind++;
-	     			cmd_ind2++;	
+	     			cmd_ind2++;
 	     		}
 	     		if(cmd_ind==0){
 	     			printf("Invalid statement if\n");
@@ -99,28 +99,27 @@ int main(){
 	     		if(ifCheck==1){
 	     			int t=0;
 	     			if(total_commands[com+1]!=NULL){
-	     				if(strstr(total_commands[com+1],"fi")==NULL){	     						     			
-	     					t++;
+	     				if(strstr(total_commands[com+1],"fi")==NULL){	     					
+	     					if(total_commands[com+2]!=NULL){
+			     				if(strstr(total_commands[com+2],"fi")==NULL){	     						     			
+			     					printf("Invalid syntax for if\n");
+			     					break;
+			     				}
+			     			}
+			     			else{
+			     				printf("Invalid syntax for if\n");
+			     				break;
+			     			}
+	     				}
+	     				else{
+	     					skipNext=true;
 	     				}
 	     			}
 	     			else{
-	     				printf("Invalid syntax for if\n");
-	     				break;
-	     			}
-	     			if(total_commands[com+2]!=NULL){
-	     				if(strstr(total_commands[com+2],"fi")==NULL){	     						     			
-	     					t++;
-	     				}
-	     			}
-	     			else{
-	     				printf("Invalid syntax for if\n");
-	     				break;
-	     			}
-	     			if(t==2){
-	     				printf("Invalid syntax for if\n");
-	     				skipNext=true;
-	     				break;
-	     			}
+			     		printf("Invalid syntax for if\n");
+			     		break;
+			     	}			
+			     	printf("%s\n", total_commands[com]);     	
 		     		int cmd_ind=0;
 		     		int cmd_ind2=6;
 		     		while(cmd_ind2<len){
