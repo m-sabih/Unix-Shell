@@ -1,6 +1,6 @@
 all: shellexe
-shellexe: history.c shell.c
-	gcc history.c shell.c -o shellexe
+shellexe: history.c builtin.c shell.c
+	gcc history.c builtin.c shell.c -o shellexe
 clean:
 	rm -f *.o
 	rm -f ./d1/mymod.o
