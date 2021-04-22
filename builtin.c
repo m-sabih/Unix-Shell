@@ -12,7 +12,9 @@
 extern int jobs[];
 extern int totalJobs;
 
+//Funtions related to Internal shell commands
 int BuiltInCd(char** arglist){
+	//change directory based on path received. if no path then change to home folder
 	if (arglist[1] == NULL) {
 		chdir(getenv("HOME")); 
 		return 1;
@@ -27,6 +29,7 @@ int BuiltInCd(char** arglist){
 }
 
 void BuiltInJob() {	
+	//get the information from the jobs array which contains pid, used that pid to access proc directory
 	char dirName[100];
 	char name[100];
 	char state;
@@ -63,11 +66,13 @@ void BuiltInJob() {
 }
 
 void BuiltInKill(char* pid){
+	//kill the process
 	int n=atoi(pid);
 	kill(n, SIGKILL);
 }
 
 void BuiltInHelp(char *arg){
+	// show help based on arguments recieved
 	if(arg == NULL)
 		printf("Shell built in commands include \tkill, jobs, cd, exit. \nUse help [command] to get more details \n");
 	else if (strcmp(arg,"cd") == 0) 
